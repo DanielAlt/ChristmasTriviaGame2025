@@ -1,0 +1,70 @@
+<div class=" me-md-3 pt-3 px-3 pt-md-5 px-md-5 text-center overflow-hidden" style="background-color:rgba(0,0,0,.8);">
+    <div class="my-3 py-3"> 
+        <h2 class="display-5 text-white">{{gameInfo.name}}</h2> 
+        <h3 class="display-5 text-white">Password: {{roomInfo.password}}</h3> 
+        <p class="lead text-white">{{gameInfo.description}}</p> 
+    </div> 
+    <div class="bg-body-tertiary shadow-sm mx-auto" style="width: 80%; border-radius: 21px 21px 0 0;padding:20px;">
+
+        <div class="row row-cols-1 row-cols-lg-3 align-items-stretch g-4 py-5"> 
+            <div class="col"> 
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/0f2b4a18-3264-4822-9cd9-b5e14e00f4e4.png');background-size:cover;"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span id="lobby-counter">{{connectedClients.length}}</span> Players in Lobby</h3> 
+                    </div> 
+                </div> 
+            </div> 
+            
+            <div class="col"> 
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('unsplash-photo-2.jpg');"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1"> 
+                        <table>
+                            <tbody id="team-list">                         
+                                {{#each connectedClients}}
+                                <tr>
+                                    <td>{{this.name}}</td>
+                                    {{#if this.isMe}}
+                                        <td>That's US!</td>
+                                    {{/if}}
+                                </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+                    </div> 
+                </div> 
+            </div> 
+            
+            <div class="col"> 
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/bbb41945-3fb6-4b58-aa58-b818787438e4.png');background-size:cover;"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Game Start</h3> 
+                        
+                    </div> 
+                </div> 
+            </div> 
+        </div>
+
+        {{#if isRoomOwner}}
+            <h1>You are the HOST</h1>
+        {{/if}}
+
+
+    </div> 
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const lobbyId = {{roomInfo.id}};
+  const socket = io();
+
+  // Join the lobby room
+  socket.emit("joinLobby", lobbyId);
+
+  // Listen for notifications
+  socket.on("notifications", (data) => {
+    $("#team-list").append(`<tr><td>${data.name}</td></tr>`);
+    let currentPlayersCount = Number($("#lobby-counter").html());
+    console.log(currentPlayersCount)
+    $("#lobby-counter").html(currentPlayersCount+1);
+  });
+</script>

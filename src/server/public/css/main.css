@@ -5,3 +5,15 @@ body{
     background-position: center center;
 }            
 
+.card-text-custom{
+    background-color: rgba(0,0,0,.7);
+}
+
+#team-list td{
+    text-transform: capitalize;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: 14pt;
+}
+.higlighted-team{
+    color:rgba(241, 68, 64, 0.8);
+}

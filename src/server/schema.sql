@@ -55,6 +55,17 @@ CREATE TABLE rooms_clients (
     FOREIGN KEY (client_id) REFERENCES clients(id)
 );
 
+CREATE TABLE game_session_answers(
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    game_session_id INTEGER NOT NULL,
+    client_id INTEGER NOT NULL,
+    question_id INTEGER NOT NULL,
+    answer VARCHAR(255) NOT NULL,
+    FOREIGN KEY (game_session_id) REFERENCES game_sessions(id),
+    FOREIGN KEY (client_id) REFERENCES clients(id),
+    FOREIGN KEY (question_id) REFERENCES questions(id)
+);
+
 CREATE TABLE game_session_leaderboards (
     game_session_id     INTEGER NOT NULL,
     client_id           INTEGER NOT NULL,

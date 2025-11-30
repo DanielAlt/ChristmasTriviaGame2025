@@ -9,22 +9,23 @@
         <div class="row row-cols-1 row-cols-lg-3 align-items-stretch g-4 py-5"> 
             <div class="col"> 
                 <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/0f2b4a18-3264-4822-9cd9-b5e14e00f4e4.png');background-size:cover;"> 
-                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
                         <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span id="lobby-counter">{{connectedClients.length}}</span> Players in Lobby</h3> 
                     </div> 
                 </div> 
             </div> 
             
             <div class="col"> 
-                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('unsplash-photo-2.jpg');"> 
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style=""> 
                     <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1"> 
                         <table>
                             <tbody id="team-list">                         
                                 {{#each connectedClients}}
-                                <tr>
-                                    <td>{{this.name}}</td>
+                                <tr>                                    
                                     {{#if this.isMe}}
-                                        <td>That's US!</td>
+                                        <td class="higlighted-team">{{this.name}}</td>
+                                    {{else}}
+                                        <td>{{this.name}}</td>
                                     {{/if}}
                                 </tr>
                                 {{/each}}
@@ -36,35 +37,83 @@
             
             <div class="col"> 
                 <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/bbb41945-3fb6-4b58-aa58-b818787438e4.png');background-size:cover;"> 
-                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Game Start</h3> 
-                        
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold"><span id="countdown-timer"></span> Game Start</h3> 
                     </div> 
                 </div> 
             </div> 
         </div>
 
         {{#if isRoomOwner}}
-            <h1>You are the HOST</h1>
+            <div class="px-4 py-5 my-5 text-center"> 
+                <h1 class="display-5 fw-bold text-body-emphasis">You are the host</h1> 
+                <div class="col-lg-6 mx-auto"> 
+                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center"> 
+                        <button type="button" class="btn btn-primary btn-lg px-4 gap-3" id="start-game-countdown">Start Game Countdown</button>
+                    </div> 
+                </div> 
+            </div>
         {{/if}}
-
 
     </div> 
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  const lobbyId = {{roomInfo.id}};
-  const socket = io();
+    const lobbyId = {{roomInfo.id}};
+    const socket = io();
+    const isRoomOwner = {{isRoomOwner}};
 
-  // Join the lobby room
-  socket.emit("joinLobby", lobbyId);
+    // Join the lobby room
+    socket.emit("joinLobby", lobbyId);
 
-  // Listen for notifications
-  socket.on("notifications", (data) => {
-    $("#team-list").append(`<tr><td>${data.name}</td></tr>`);
-    let currentPlayersCount = Number($("#lobby-counter").html());
-    console.log(currentPlayersCount)
-    $("#lobby-counter").html(currentPlayersCount+1);
-  });
+    // Listen for notifications
+    socket.on("player-join", (data) => {
+        $("#team-list").append(`<tr><td>${data.name}</td></tr>`);
+        let currentPlayersCount = Number($("#lobby-counter").html());
+        $("#lobby-counter").html(currentPlayersCount+1);
+    });
+
+    socket.on("game-start", (data) => {
+        window.location.href = data.url;
+    });
+
+    socket.on("timer-start", (data) => {
+        remainingTime = data.time; 
+        const interval = setInterval(() => {
+            remainingTime--;
+            $("#countdown-timer").html(remainingTime);
+            if (remainingTime <= 0) {
+                clearInterval(interval);
+                if (isRoomOwner){
+                    $.ajax({
+                        url: `/lobby/${lobbyId}/start-game`,
+                        method: "POST",
+                        success: function(data){
+                            console.log(data)
+                        },
+                        error: function(error){
+                            console.log(error);
+                        }
+                    })
+                }
+            }
+        }, 1000);
+    });
+
+    $("#start-game-countdown").on("click", function(e){
+        $(this).attr("disabled", "disabled");
+        $.ajax({
+            url: `/lobby/${lobbyId}/start-timer`, 
+            method: "POST",
+            success: function(result){
+                console.log(result);
+            },
+            error: function(error){
+                alert(error.responseJSON.message);
+                $(this).attr("disabled", "");
+            }
+        });
+    });
+
 </script>

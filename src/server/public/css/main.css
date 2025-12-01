@@ -8,6 +8,12 @@ body{
 .card-text-custom{
     background-color: rgba(0,0,0,.7);
 }
+.card-text-custom-selected{
+    background-color: #71e953b3 !important;
+}
+.card-text-custom-selectable:hover{
+    background-color: #1c6409b3 !important;
+}
 
 #team-list td{
     text-transform: capitalize;
@@ -16,4 +22,9 @@ body{
 }
 .higlighted-team{
     color:rgba(241, 68, 64, 0.8);
+}
+
+.answer-text{
+    text-transform: capitalize;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
 }

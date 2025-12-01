@@ -1,6 +1,21 @@
 
 <div class=" me-md-3 pt-3 px-3 pt-md-5 px-md-5 text-center overflow-hidden" style="background-color:rgba(0,0,0,.8);">
     <div class="my-3 py-3"> 
-        <h2 class="display-5 text-white">We got your Answer, Please Wait until all players have Answered!</h2> 
+        {{#if answerMode }}
+            <h2 class="display-5 text-white">We got your Answer, sit tight while the other players deliberate!</h2>
+        {{else}}
+            <h2 class="display-5 text-white">We got your clever Lie, Please Wait until all players have had a chance at trickery!</h2> 
+        {{/if}}
     </div>
 </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const lobbyId = {{lobbyInfo.id}};
+    const gameSessionId = {{gameSession.id}};
+    const socket = io();
+    socket.emit("joinLobby", lobbyId);
+    socket.on("answer-ceremony", (data) => {
+        window.location.href = data.url;
+    });
+</script>

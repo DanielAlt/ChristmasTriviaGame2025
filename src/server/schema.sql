@@ -1,3 +1,8 @@
+DROP DATABASE framework_fun;
+CREATE DATABASE framework_fun;
+
+use framework_fun;
+
 CREATE TABLE clients (
     id               INTEGER PRIMARY KEY AUTO_INCREMENT,
     name             VARCHAR(255) NOT NULL,
@@ -32,6 +37,7 @@ CREATE TABLE game_sessions (
     id              INTEGER PRIMARY KEY AUTO_INCREMENT,
     started_on      DATETIME,
     question_id     INTEGER NOT NULL,
+    ceremony_state  VARCHAR(255) NOT NULL DEFAULT 'play',
     FOREIGN KEY (question_id) REFERENCES questions(id)
 );
 
@@ -66,6 +72,32 @@ CREATE TABLE game_session_answers(
     FOREIGN KEY (question_id) REFERENCES questions(id)
 );
 
+CREATE TABLE game_session_trueanswers(
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    game_session_id INTEGER NOT NULL,
+    client_id INTEGER NOT NULL,
+    question_id INTEGER NOT NULL,
+    answer VARCHAR(255) NOT NULL,
+    FOREIGN KEY (game_session_id) REFERENCES game_sessions(id),
+    FOREIGN KEY (client_id) REFERENCES clients(id),
+    FOREIGN KEY (question_id) REFERENCES questions(id)
+);
+
+CREATE TABLE game_session_answer_ceremony(
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    game_session_id INTEGER NOT NULL,
+    question_id INTEGER NOT NULL,
+    answer1 VARCHAR(255),
+    answer1_client INTEGER,
+    answer2 VARCHAR(255),
+    answer2_client INTEGER,
+    answer3 VARCHAR(255),
+    answer3_client INTEGER,
+    answer4 VARCHAR(255),
+    answer4_client INTEGER,
+    correct_answer VARCHAR(255)
+);
+
 CREATE TABLE game_session_leaderboards (
     game_session_id     INTEGER NOT NULL,
     client_id           INTEGER NOT NULL,
@@ -73,4 +105,58 @@ CREATE TABLE game_session_leaderboards (
     PRIMARY KEY (game_session_id, client_id),
     FOREIGN KEY (game_session_id) REFERENCES game_sessions(id),
     FOREIGN KEY (client_id) REFERENCES clients(id)
+);
+
+INSERT INTO games(name, type, description) VALUES (
+    'Holiday Lies',
+    'Trivia',
+    'Holiday Lies is a Trivia Game with a Twist! Players submit Answers to trick each other'
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    'What artist released the top grossing holiday album of all time?',
+    'Elvis Presley',
+    60000,
+    NOW(),
+    10
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    'In Home Alone 2, what name does Marv come up with to rebrand "The Wet Bandits"?',
+    'The Sticky Bandits',
+    60000,
+    NOW(),
+    10
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    'In Charles Dickens "A Christmas Carol," what was Mr. Scrooges first name?',
+    'Ebenezer',
+    60000,
+    NOW(),
+    10
 );

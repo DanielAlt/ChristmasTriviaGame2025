@@ -144,6 +144,14 @@ function randomPassword(length){
     return (password);
 }
 
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1)); 
+        [array[i], array[j]] = [array[j], array[i]];  // swap
+    }
+    return array;
+}
+
 app.get("/create-game", lobbyProtection, async(req, res) => {
     res.render("create-game");
 });
@@ -457,6 +465,17 @@ app.get("/lobby/:id/play-game", async(req, res) => {
 
     if (!playerInfo[0] && !isGameHost) return res.status(404).render("not-found");
 
+    const [allPlayers] = await pool.query(`
+        SELECT 
+            c.name, c.id 
+        FROM clients c
+        JOIN rooms_clients rc ON (rc.client_id = c.id)
+        WHERE 
+            rc.room_id = :roomID;
+    `, {
+        roomID: req.params.id
+    });
+
     // Get the Game Session Object
     const [gameSession] = await pool.query(`
         SELECT * from game_sessions WHERE game_sessions.id = :gameSessionID LIMIT 1;
@@ -484,7 +503,7 @@ app.get("/lobby/:id/play-game", async(req, res) => {
             gameSessionID: gameSession[0].id
         });
         if (myPreviousLie.length){
-            return res.redirect(`/lobby/${req.params.id}/play-game/waiting-room`);
+            return res.redirect(`/lobby/${req.params.id}/play-game/${lobbyInfo[0].game_session_id}/waiting-room`);
         }
     }
 
@@ -512,11 +531,12 @@ app.get("/lobby/:id/play-game", async(req, res) => {
         playerInfo: playerInfo[0],
         lobbyInfo: lobbyInfo[0],
         isGameHost: isGameHost,
-        existingAnswers: existingAnswers
+        existingAnswers: existingAnswers,
+        allPlayers: allPlayers
     });
 });
 
-app.post("/lobby/:lobby_id/play-game/:game_session_id/submit-lie", async(req, res) => {
+app.post("/lobby/:lobby_id/play-game/:game_session_id/submit-lie", async (req, res) => {
 
     // Assure Room Exists, get room Info
     const [lobbyInfo] = await pool.query(`
@@ -573,7 +593,7 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/submit-lie", async(req, re
     });
     if (myPreviousLie.length){
         // return res.status(422).send({"message": "You already answered this question"});
-        return res.redirect(`/lobby/${req.params.lobby_id}/play-game/waiting-room`);
+        return res.redirect(`/lobby/${req.params.lobby_id}/play-game/${req.params.game_session_id}/waiting-room`);
     }
 
     // Create the lie and Update the Host's Websocket
@@ -602,15 +622,366 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/submit-lie", async(req, re
         playerInfo[0].name
     });
     
-    return res.redirect(`/lobby/${req.params.lobby_id}/play-game/waiting-room`);
+    return res.redirect(`/lobby/${req.params.lobby_id}/play-game/${req.params.game_session_id}/waiting-room`);
 });
 
-app.get("/lobby/:lobby_id/play-game/waiting-room", async(req, res) => {
-    res.render("game-holdingRoom");
+app.get("/lobby/:lobby_id/play-game/:game_session_id/waiting-room", async (req, res) => {
+    // Check to assure Lobby exists. 
+    const [myLobby] = await pool.query(
+        `SELECT * FROM rooms WHERE rooms.id = :roomID LIMIT 1;`,
+        {roomID: req.params.lobby_id}
+    );
+    if (!myLobby[0]) return res.status(404).render("not-found");
+   
+    // Assure Game Session Exists, get session Info
+    const [gameSessionInfo] = await pool.query(`
+        SELECT * FROM game_sessions WHERE game_sessions.id=:gameSessionsID LIMIT 1;
+    `, {gameSessionsID: req.params.game_session_id });
+    if (!gameSessionInfo[0]) return res.status(404).render("not-found");
+
+    // Determine GameSession State (redirect if state incorrect)
+    if (gameSessionInfo[0].ceremony_state == "answer"){
+        res.redirect(`/lobby/${req.params.lobby_id}/play-game/${req.params.game_session_id}/answer-ceremony`)
+    }
+
+    res.render("game-holdingRoom", {
+        gameSession: gameSessionInfo[0],
+        lobbyInfo: myLobby[0],
+        answerMode: false
+    });
 });
 
+app.post("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony", async (req, res) => {
+
+    // Check to assure Lobby exists. 
+    const [myLobby] = await pool.query(
+        `SELECT * FROM rooms WHERE rooms.id = :roomID LIMIT 1;`,
+        {roomID: req.params.lobby_id}
+    );
+    if (!myLobby[0]) return res.status(404).render("not-found");
+
+    // Assure Game Session Exists, get session Info
+    const [gameSessionInfo] = await pool.query(`
+        SELECT * FROM game_sessions WHERE game_sessions.id=:gameSessionsID LIMIT 1;
+    `, {gameSessionsID: req.params.game_session_id });
+    if (!gameSessionInfo[0]) return res.status(404).render("not-found");
+
+    // Assure the requesting user is the Game HOST 
+    const [isGameHost] = await pool.query(
+        `SELECT 1 FROM rooms WHERE host_client = :hostClient LIMIT 1;`,
+        { hostClient: req.session.id }
+    );
+    if (!isGameHost[0]){
+        return res.status(403).send({
+            "message": "Only the Host can iniate the Answer Ceremony"
+        });
+    }
+
+    // Update GameSession Ceremony State
+    const [gameSessionStore] = await pool.execute(`
+        UPDATE game_sessions SET ceremony_state = 'answer' WHERE id=:gameSessionID;
+    `, {
+        gameSessionID: gameSessionInfo[0].id
+    });
+   
+    // Get the current Question 
+    const [question] = await pool.query(`
+        SELECT * FROM questions   
+        WHERE questions.id = :questionID LIMIT 1;
+    `, { questionID : gameSessionInfo[0].question_id }
+    );
+    if (!question[0]) return res.status(500).render("internial-error");
+
+    // Get the Current Submitted 'lies'
+    const [existingAnswers] = await pool.query(`
+        SELECT * FROM  game_session_answers WHERE 
+            game_session_id = :gameSessionID AND 
+            question_id = :questionID;
+    `, {
+        gameSessionID: gameSessionInfo[0].id,
+        questionID: gameSessionInfo[0].question_id
+    });
+
+    shuffledAnswers = shuffle(existingAnswers);
+
+    // Create the game_session_answer_ceremony
+    let answer_dict = {
+        answer1       : undefined,
+        answer1Client : undefined,
+        answer2       : undefined,
+        answer2Client : undefined,
+        answer3       : undefined,
+        answer3Client : undefined,
+        answer4       : undefined, 
+        answer4Client : undefined
+    } 
+    let notAllowedAnswers = [];
+    for (let i = 0; i < shuffledAnswers.length; i++){
+        // If the submitted answer is the real answer choose a default lie 
+        // If it happens more than once, choose a different default lie
+        if (shuffledAnswers[i].answer.trim().toLowerCase() == question[0].answer.trim().toLowerCase()){
+            let defaultOptions = ['option_text1', 'option_text2', 'option_text3', 'option_text4'];
+            let defaultOption; 
+            for (let j = 0; j < defaultOptions.length; j++){
+                if (notAllowedAnswers.indexOf(defaultOptions[j]) === -1 ){
+                    defaultOption = defaultOptions[j];
+                    notAllowedAnswers.push(defaultOptions[j]);
+                    break;
+                }
+            }
+            answer_dict["answer" + (i+1)] = question[0][defaultOption]
+            answer_dict["answer" + (i+1) + "Client"] = shuffledAnswers[i].client_id;
+        } else {
+            answer_dict["answer" + (i+1)] = shuffledAnswers[i].answer.trim().toLowerCase();
+            answer_dict["answer" + (i+1) + "Client"] = shuffledAnswers[i].client_id;
+        }
+    }
+    answer_dict.answer4 = question[0].answer;
+    answer_dict.answer4Client = 0;
 
 
+    const [myCeremonyStore] = await pool.execute(`
+        INSERT INTO game_session_answer_ceremony(
+            game_session_id,
+            question_id,
+            answer1,
+            answer1_client,
+            answer2,
+            answer2_client,
+            answer3,
+            answer3_client,
+            answer4,
+            answer4_client,
+            correct_answer
+        ) VALUES (
+            :gameSessionID,
+            :questionID,
+            :answer1,
+            :answer1Client,
+            :answer2,
+            :answer2Client,
+            :answer3,
+            :answer3Client,
+            :answer4,
+            :answer4Client,
+            :correctAnswer
+        );
+    `,{...{
+        gameSessionID: gameSessionInfo[0].id,
+        questionID: gameSessionInfo[0].question_id,
+        correctAnswer: question[0].answer,
+    }, ...answer_dict});
+
+    // Notify all clients that the Answer Ceremony starts Now!
+    io.to(`lobby-${req.params.lobby_id}`).emit("answer-ceremony", {url: 
+        `/lobby/${req.params.lobby_id}/play-game/${req.params.game_session_id}/answer-ceremony`
+    });
+
+});
+
+app.get("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony", async (req, res) => {
+
+    // Check to assure Lobby exists. 
+    const [lobbyInfo] = await pool.query(
+        `SELECT * FROM rooms WHERE rooms.id = :roomID LIMIT 1;`,
+        {roomID: req.params.lobby_id}
+    );
+    if (!lobbyInfo[0]) return res.status(404).render("not-found");
+
+    // Assure Game Session Exists, get session Info
+    const [gameSessionInfo] = await pool.query(`
+        SELECT * FROM game_sessions WHERE game_sessions.id=:gameSessionsID LIMIT 1;
+    `, {gameSessionsID: req.params.game_session_id });
+    if (!gameSessionInfo[0]) return res.status(404).render("not-found");
+
+
+    const isGameHost = (lobbyInfo[0].host_client == req.session.id);
+
+    // Assure Player belongs to Room get PLayer Info (or is host)
+    const [playerInfo] = await pool.query(`
+        SELECT 
+            c.name, c.id
+        FROM clients c
+        JOIN rooms_clients rc ON (rc.client_id = c.id)
+        WHERE 
+            c.client_session = :clientSession AND
+            rc.room_id = :roomID
+    `, {
+        clientSession: req.session.id,
+        roomID: req.params.lobby_id
+    });
+
+    if (!playerInfo[0] && !isGameHost) return res.status(404).render("not-found");
+
+    const [allPlayers] = await pool.query(`
+        SELECT 
+            c.name, c.id 
+        FROM clients c
+        JOIN rooms_clients rc ON (rc.client_id = c.id)
+        WHERE 
+            rc.room_id = :roomID;
+    `, {
+        roomID: req.params.id
+    });
+
+    // Get the current Question 
+    const [question] = await pool.query(`
+        SELECT * FROM questions   
+        WHERE questions.id = :questionID LIMIT 1;
+    `, { questionID : gameSessionInfo[0].question_id }
+    );
+    if (!question[0]) return res.status(500).render("internial-error");
+
+    // Get the game_session_answer_ceremony
+    const [answers] = await pool.query(`
+        SELECT * 
+        FROM game_session_answer_ceremony 
+        WHERE 
+            question_id = :questionID AND 
+            game_session_id = :gameSessionID;
+    `, {
+        questionID: question[0].id,
+        gameSessionID: gameSessionInfo[0].id
+    });
+    
+    res.render("game-answer-ceremony", {
+        lobbyInfo: lobbyInfo[0],
+        gameSession: gameSessionInfo[0],
+        question: question[0],
+        answers: answers[0],
+        isGameHost: isGameHost,
+        allPlayers: allPlayers
+    })
+});
+
+app.post("/lobby/:lobby_id/play-game/:game_session_id/submit-answer", async (req, res) => {
+    // Check to assure Lobby exists. 
+    const [myLobby] = await pool.query(
+        `SELECT * FROM rooms WHERE rooms.id = :roomID LIMIT 1;`,
+        {roomID: req.params.lobby_id}
+    );
+    if (!myLobby[0]) return res.status(404).render("not-found");
+
+    // Assure Game Session Exists, get session Info
+    const [gameSessionInfo] = await pool.query(`
+        SELECT * FROM game_sessions WHERE game_sessions.id=:gameSessionsID LIMIT 1;
+    `, {gameSessionsID: req.params.game_session_id });
+    if (!gameSessionInfo[0]) return res.status(404).render("not-found");
+
+    // Assure the requesting user is a valid player for this lobby
+    const [playerInfo] = await pool.query(
+        `SELECT 
+            c.id, c.name 
+        FROM clients c 
+        JOIN rooms_clients rc ON (rc.client_id = c.id)
+        WHERE 
+            c.client_session = :clientSession AND 
+            rc.room_id = :roomID
+        LIMIT 1;`,
+        { 
+            clientSession: req.session.id,
+            roomID: myLobby[0].id
+        }
+    );
+    if (!playerInfo[0]){
+        return res.status(403).send({
+            "message": "You are not assigned to this Lobby"
+        });
+    }
+
+    // Check if user already Answered, Boot them to waiting room
+    const [existingAnswers] = await pool.query(`
+        SELECT * 
+        FROM game_session_trueanswers 
+        WHERE 
+             game_session_id = :gameSessionID AND 
+             client_id = :clientID AND 
+             question_id = :questionID
+    `, {
+        gameSessionID: gameSessionInfo[0].id,
+        clientID: playerInfo[0].id,
+        questionID: gameSessionInfo[0].question_id
+    });
+    if (existingAnswers.length){
+        return res.redirect(`/lobby/${req.params.lobby_id}/play-game/${gameSessionInfo[0].id}/answer-ceremony/waiting-room`)
+    }
+
+    const [getPossibleAnswers] = await pool.query(`
+        SELECT * 
+        FROM game_session_answer_ceremony 
+        WHERE 
+            game_session_id = :gameSessionID AND
+            question_id = :questionID
+    `, {
+        gameSessionID: gameSessionInfo[0].id,
+        questionID: gameSessionInfo[0].question_id
+    }
+    );
+
+    let possibleAnswers = [];
+    possibleAnswers.push(getPossibleAnswers[0].answer1.trim().toLowerCase());
+    possibleAnswers.push(getPossibleAnswers[0].answer2.trim().toLowerCase());
+    possibleAnswers.push(getPossibleAnswers[0].answer3.trim().toLowerCase());
+    possibleAnswers.push(getPossibleAnswers[0].answer4.trim().toLowerCase());
+
+    // Get the User Input and Validate
+    const myAnswer = req.body.answer.trim().toLowerCase();
+    if (possibleAnswers.indexOf(myAnswer) === -1){
+        return res.status(422).send({"message": "That's not one of the avaiable answers"});
+    }
+
+    const answerStore = await pool.execute(`
+        INSERT INTO game_session_trueanswers(
+            game_session_id,
+            client_id,
+            question_id,
+            answer
+        ) VALUES (
+            :gameSessionID, 
+            :clientID,
+            :questionID,
+            :answer
+        );
+    `, {
+        gameSessionID: gameSessionInfo[0].id, 
+        clientID: playerInfo[0].id,
+        questionID: gameSessionInfo[0].question_id,
+        answer: myAnswer
+    });
+    
+
+        // Notify all clients that the Answer Ceremony starts Now!
+    io.to(`lobby-${req.params.lobby_id}`).emit("answer-submitted", {teamName: 
+        playerInfo[0].name
+    });
+
+    res.redirect(`/lobby/${req.params.lobby_id}/play-game/${gameSessionInfo[0].id}/answer-ceremony/waiting-room`)
+
+});
+
+app.get("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony/waiting-room", async (req, res) => {
+    // Check to assure Lobby exists. 
+    const [myLobby] = await pool.query(
+        `SELECT * FROM rooms WHERE rooms.id = :roomID LIMIT 1;`,
+        {roomID: req.params.lobby_id}
+    );
+    if (!myLobby[0]) return res.status(404).render("not-found");
+   
+    // Assure Game Session Exists, get session Info
+    const [gameSessionInfo] = await pool.query(`
+        SELECT * FROM game_sessions WHERE game_sessions.id=:gameSessionsID LIMIT 1;
+    `, {gameSessionsID: req.params.game_session_id });
+    if (!gameSessionInfo[0]) return res.status(404).render("not-found");
+
+    res.render("game-holdingRoom", {
+        gameSession: gameSessionInfo[0],
+        lobbyInfo: myLobby[0],
+        answerMode: true
+    });
+    
+});
+
+// start-game -> join-lobby -> play-game -> waiting room -> answer ceremony
 
 // Start server
 server.listen(process.env.APP_PORT, () => {

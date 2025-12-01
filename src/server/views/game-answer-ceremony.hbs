@@ -1,0 +1,144 @@
+<div class=" me-md-3 pt-3 px-3 pt-md-5 px-md-5 text-center overflow-hidden" style="background-color:rgba(0,0,0,.8);">
+
+    {{#if isGameHost }}
+
+        <div class="my-3 py-3"> 
+            <h2 class="display-5 text-white">{{question.question_text}}</h2> 
+            <p class="lead text-white" >
+                Answer Timer: <span id="answer-timer">120</span> | 
+                Answers Submitted: <span id="answer-counter">0</span>
+            </p> 
+        </div>
+
+        <div class="bg-body-tertiary shadow-sm mx-auto" style="width: 80%; border-radius: 21px 21px 0 0;padding:20px;">
+
+        <div class="row row-cols-1 row-cols-lg-2 align-items-stretch g-4 py-5"> 
+            <div class="col"> 
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/0f2b4a18-3264-4822-9cd9-b5e14e00f4e4.png');background-size:cover;"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">A: {{ answers.answer1 }}</span></h3> 
+                    </div> 
+                </div> 
+            </div> 
+                        
+            <div class="col"> 
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/bbb41945-3fb6-4b58-aa58-b818787438e4.png');background-size:cover;"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">B: {{ answers.answer2 }}</span></h3> 
+                    </div> 
+                </div> 
+            </div> 
+
+            <div class="col"> 
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/848223a4-3cc7-46f1-912f-476775e417c7.png');background-size:cover;"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">C: {{ answers.answer3 }}</span></h3> 
+                    </div> 
+                </div> 
+            </div> 
+
+            <div class="col"> 
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/3d5b2107-a5d1-467c-a370-a5dcef7c7931.png');background-size:cover;"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">C: {{ answers.answer4 }}</span></h3> 
+                    </div> 
+                </div> 
+            </div> 
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+
+            const lobbyId = {{lobbyInfo.id}};
+            const gameSessionId = {{gameSession.id}};
+            const socket = io();
+            const isRoomOwner = {{isGameHost}} ;
+            const numberOfPlayer = {{allPlayers.length}};
+
+            // Join the lobby room
+            socket.emit("joinLobby", lobbyId);
+
+            // Listen for notifications
+            socket.on("answer-submitted", (data) => {
+                let liesCount = Number($("#answer-counter").html());
+                $("#answer-counter").html(liesCount+1);
+                if (liesCount+1 >= numberOfPlayer){
+                    
+                }
+            });
+
+            $(document).ready(function(){
+                let remainingTime = 30; 
+                const interval = setInterval(() => {
+                    remainingTime--;
+                    $("#answer-timer").html(remainingTime);
+                    if (remainingTime <= 0) {
+                        clearInterval(interval);
+                    }
+                }, 1000);
+            });
+
+        </script>
+
+
+    {{else}}
+
+        <div class="my-3 py-3"> 
+            <h2 class="display-5 text-white">Submit Your Best Answer!</h2> 
+        </div>
+
+         <div class="row row-cols-1 row-cols-lg-1 align-items-stretch g-4 py-5"> 
+            <div class="col"> 
+                <div class="card card-cover  overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/0f2b4a18-3264-4822-9cd9-b5e14e00f4e4.png');background-size:cover;"> 
+                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ answers.answer1 }}"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">A: {{ answers.answer1 }}</span></h3> 
+                    </div> 
+                </div> 
+            </div> 
+                        
+            <div class="col"> 
+                <div class="card card-cover overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/bbb41945-3fb6-4b58-aa58-b818787438e4.png');background-size:cover;"> 
+                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ answers.answer2 }}"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">B: {{ answers.answer2 }}</span></h3> 
+                    </div> 
+                </div> 
+            </div> 
+
+            <div class="col"> 
+                <div class="card card-cover overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/848223a4-3cc7-46f1-912f-476775e417c7.png');background-size:cover;"> 
+                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ answers.answer3 }}"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">C: {{ answers.answer3 }}</span></h3> 
+                    </div> 
+                </div> 
+            </div> 
+
+            <div class="col"> 
+                <div class="card card-cover overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/3d5b2107-a5d1-467c-a370-a5dcef7c7931.png');background-size:cover;"> 
+                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ answers.answer4 }}"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">C: {{ answers.answer4 }}</span></h3> 
+                    </div> 
+                </div> 
+            </div> 
+
+            <form action="/lobby/{{lobbyInfo.id}}/play-game/{{gameSession.id}}/submit-answer" method="POST">
+                <input type="hidden" value="" name="answer" id="answer" />
+                <input type="submit" class="btn btn-primary btn-lg px-4 gap-3" value="Submit Answer" disabled="disabled" id="submit-btn"/> 
+            </form>
+
+        </div>
+
+        <script>
+            $(document).ready(function(){
+                $(".card-text-custom-selectable").on("click", function(e){
+                    $("#answer").val("");
+                    $(".card-text-custom-selected").removeClass("card-text-custom-selected");
+                    
+                    $(this).addClass("card-text-custom-selected");
+                    $("#answer").val($(this).data("answer"));
+                    $("#submit-btn").prop("disabled", false);
+                })
+            });
+        </script>
+
+    {{/if}}
+</div>

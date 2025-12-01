@@ -10,6 +10,17 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+{{#if answerMode }}
+<script>
+    const lobbyId = {{lobbyInfo.id}};
+    const gameSessionId = {{gameSession.id}};
+    const socket = io();
+    socket.emit("joinLobby", lobbyId);
+    socket.on("answer-reveal-ceremony", (data) => {
+        window.location.href = data.url;
+    });
+</script>
+{{else}}
 <script>
     const lobbyId = {{lobbyInfo.id}};
     const gameSessionId = {{gameSession.id}};
@@ -17,5 +28,7 @@
     socket.emit("joinLobby", lobbyId);
     socket.on("answer-ceremony", (data) => {
         window.location.href = data.url;
+
     });
 </script>
+{{/if}}

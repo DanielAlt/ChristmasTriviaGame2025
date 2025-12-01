@@ -100,6 +100,7 @@ CREATE TABLE game_session_answer_ceremony(
 
 CREATE TABLE game_session_leaderboards (
     game_session_id     INTEGER NOT NULL,
+    question_id         INTEGER NOT NULL,
     client_id           INTEGER NOT NULL,
     score               INTEGER,
     PRIMARY KEY (game_session_id, client_id),

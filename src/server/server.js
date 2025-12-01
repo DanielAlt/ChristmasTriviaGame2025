@@ -690,7 +690,7 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony", async (r
         WHERE questions.id = :questionID LIMIT 1;
     `, { questionID : gameSessionInfo[0].question_id }
     );
-    if (!question[0]) return res.status(500).render("internial-error");
+    if (!question[0]) return res.status(500).render("internal-error");
 
     // Get the Current Submitted 'lies'
     const [existingAnswers] = await pool.query(`
@@ -821,7 +821,7 @@ app.get("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony", async (re
         WHERE 
             rc.room_id = :roomID;
     `, {
-        roomID: req.params.id
+        roomID: req.params.lobby_id
     });
 
     // Get the current Question 
@@ -843,12 +843,26 @@ app.get("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony", async (re
         questionID: question[0].id,
         gameSessionID: gameSessionInfo[0].id
     });
+
+    // Get The number of Answers already submitted
+    const [answersSubmitted] = await pool.query(`
+        SELECT * 
+        FROM game_session_trueanswers 
+        WHERE 
+            game_session_id = :gameSessionID AND
+            question_id = :questionID;
+        `
+    , {
+        questionID: question[0].id,
+        gameSessionID: gameSessionInfo[0].id    
+    });
     
     res.render("game-answer-ceremony", {
         lobbyInfo: lobbyInfo[0],
         gameSession: gameSessionInfo[0],
         question: question[0],
         answers: answers[0],
+        answersSubmitted: answersSubmitted,
         isGameHost: isGameHost,
         allPlayers: allPlayers
     })
@@ -977,9 +991,131 @@ app.get("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony/waiting-roo
         gameSession: gameSessionInfo[0],
         lobbyInfo: myLobby[0],
         answerMode: true
-    });
-    
+    });    
 });
+
+app.post("/lobby/:lobby_id/play-game/:game_session_id/answer-reveal-ceremony", async (req, res) => {
+    // Check to assure Lobby exists. 
+    const [myLobby] = await pool.query(
+        `SELECT * FROM rooms WHERE rooms.id = :roomID LIMIT 1;`,
+        {roomID: req.params.lobby_id}
+    );
+    if (!myLobby[0]) return res.status(404).render("not-found");
+
+    // Assure Game Session Exists, get session Info
+    const [gameSessionInfo] = await pool.query(`
+        SELECT * FROM game_sessions WHERE game_sessions.id=:gameSessionsID LIMIT 1;
+    `, {gameSessionsID: req.params.game_session_id });
+    if (!gameSessionInfo[0]) return res.status(404).render("not-found");
+
+    // Assure the requesting user is the Game HOST 
+    const [isGameHost] = await pool.query(
+        `SELECT 1 FROM rooms WHERE host_client = :hostClient LIMIT 1;`,
+        { hostClient: req.session.id }
+    );
+    if (!isGameHost[0]){
+        return res.status(403).send({
+            "message": "Only the Host can iniate the Answer Reveal Ceremony"
+        });
+    }
+
+    // Update GameSession Ceremony State
+    const [gameSessionStore] = await pool.execute(`
+        UPDATE game_sessions SET ceremony_state = 'answer-reveal' WHERE id=:gameSessionID;
+    `, {
+        gameSessionID: gameSessionInfo[0].id
+    });
+
+    // Get the current Question 
+    const [question] = await pool.query(`
+        SELECT * FROM questions   
+        WHERE questions.id = :questionID LIMIT 1;
+    `, { questionID : gameSessionInfo[0].question_id }
+    );
+    if (!question[0]) return res.status(500).render("internal-error");
+
+    // Get the Ceremony Data  
+    const [answerCeremony] = await pool.query(`
+        SELECT * 
+        FROM game_session_answer_ceremony 
+        WHERE  
+            game_session_id = :gameSessionID AND
+            question_id = :questionID;
+    `, {
+        gameSessionID: gameSessionInfo[0].id,
+        questionID: gameSessionInfo[0].question_id 
+    });
+
+    // Get the players Answers
+    const [playersAnswers] = await pool.query(`
+        SELECT * 
+        FROM game_session_trueanswers
+        WHERE 
+            game_session_id = :gameSessionID AND
+            question_id = :questionID;
+    `, {
+        gameSessionID: gameSessionInfo[0].id,
+        questionID: gameSessionInfo[0].question_id
+    });
+
+    // Determine Player Scores
+    scores = {}    
+    for (let j = 0 ; j < playersAnswers.length; j++){
+        scores[playersAnswers[j].client_id] = 0; 
+    }
+
+    for (let i = 0 ; i < playersAnswers.length; i++){
+        if (playersAnswers[i].answer.trim().toLowerCase() == answerCeremony[0].correct_answer){
+            scores[playersAnswers[i].client_id] += 10;
+        }
+
+        if (playersAnswers[i].answer.trim().toLowerCase() == answerCeremony[0].answer1){
+            scores[answerCeremony[0].answer1_client] += 5;
+        }
+        if (playersAnswers[i].answer.trim().toLowerCase() == answerCeremony[0].answer2){
+            scores[answerCeremony[0].answer2_client] += 5;
+        }
+        if (playersAnswers[i].answer.trim().toLowerCase() == answerCeremony[0].answer3){
+            scores[answerCeremony[0].answer3_client] += 5;
+        }
+    }
+
+    // Save Scores to Leaderboards
+    const scoreKeys = Object.keys(scores);
+    for (let x = 0; x < scoreKeys.length; x++){
+        const myLeaderBoardStore = await pool.execute(`
+            INSERT INTO game_session_leaderboards (
+                game_session_id, 
+                question_id,
+                client_id,
+                score
+            ) VALUES (
+                :gameSessionID,
+                :questionID,
+                :clientID,
+                :score 
+            );
+        `, {
+            gameSessionID: gameSessionInfo[0].id,
+            clientID: scoreKeys[x],
+            questionID: gameSessionInfo[0].question_id,
+            score: scores[scoreKeys[x]]
+        });
+    }
+
+    // Notify all clients that the Answer Reveal Ceremony Begins Now!
+    io.to(`lobby-${req.params.lobby_id}`).emit("answer-reveal-ceremony", {url: 
+        `/lobby/${req.params.lobby_id}/play-game/${gameSessionInfo[0].id}/answer-reveal-ceremony`
+    });
+
+    res.send({message: "Calculated Scores, Answer Reveal Ceremony"});
+});
+
+app.get("/lobby/:lobby_id/play-game/:game_session_id/answer-reveal-ceremony", async (req, res) => {
+    res.send("answer reveal ceremony");
+});
+
+
 
 // start-game -> join-lobby -> play-game -> waiting room -> answer ceremony
 

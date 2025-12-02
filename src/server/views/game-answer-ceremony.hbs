@@ -13,37 +13,19 @@
         <div class="bg-body-tertiary shadow-sm mx-auto" style="width: 80%; border-radius: 21px 21px 0 0;padding:20px;">
 
         <div class="row row-cols-1 row-cols-lg-2 align-items-stretch g-4 py-5"> 
+           
+           {{#each answers }}
+
             <div class="col"> 
-                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/0f2b4a18-3264-4822-9cd9-b5e14e00f4e4.png');background-size:cover;"> 
-                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">A: {{ answers.answer1 }}</span></h3> 
+                <div class="card card-cover  overflow-hidden text-bg-dark rounded-4 shadow-lg" style=""> 
+                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">{{ this }}</span></h3> 
                     </div> 
                 </div> 
             </div> 
                         
-            <div class="col"> 
-                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/bbb41945-3fb6-4b58-aa58-b818787438e4.png');background-size:cover;"> 
-                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">B: {{ answers.answer2 }}</span></h3> 
-                    </div> 
-                </div> 
-            </div> 
-
-            <div class="col"> 
-                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/848223a4-3cc7-46f1-912f-476775e417c7.png');background-size:cover;"> 
-                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">C: {{ answers.answer3 }}</span></h3> 
-                    </div> 
-                </div> 
-            </div> 
-
-            <div class="col"> 
-                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/3d5b2107-a5d1-467c-a370-a5dcef7c7931.png');background-size:cover;"> 
-                    <div class="d-flex flex-column h-100 p-5 pb-3 text-shadow-1 card-text-custom"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">D: {{ answers.answer4 }}</span></h3> 
-                    </div> 
-                </div> 
-            </div> 
+            {{/each}}
+                          
         </div>
 
         <script src="/socket.io/socket.io.js"></script>
@@ -107,37 +89,17 @@
         </div>
 
          <div class="row row-cols-1 row-cols-lg-1 align-items-stretch g-4 py-5"> 
+            {{#each answers }}
+
             <div class="col"> 
-                <div class="card card-cover  overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/0f2b4a18-3264-4822-9cd9-b5e14e00f4e4.png');background-size:cover;"> 
-                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ answers.answer1 }}"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">A: {{ answers.answer1 }}</span></h3> 
+                <div class="card card-cover  overflow-hidden text-bg-dark rounded-4 shadow-lg" style=""> 
+                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ this }}"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">{{ this }}</span></h3> 
                     </div> 
                 </div> 
             </div> 
                         
-            <div class="col"> 
-                <div class="card card-cover overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/bbb41945-3fb6-4b58-aa58-b818787438e4.png');background-size:cover;"> 
-                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ answers.answer2 }}"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">B: {{ answers.answer2 }}</span></h3> 
-                    </div> 
-                </div> 
-            </div> 
-
-            <div class="col"> 
-                <div class="card card-cover overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/848223a4-3cc7-46f1-912f-476775e417c7.png');background-size:cover;"> 
-                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ answers.answer3 }}"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">C: {{ answers.answer3 }}</span></h3> 
-                    </div> 
-                </div> 
-            </div> 
-
-            <div class="col"> 
-                <div class="card card-cover overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/3d5b2107-a5d1-467c-a370-a5dcef7c7931.png');background-size:cover;"> 
-                    <div class="d-flex flex-column p-5 pb-3 text-shadow-1 card-text-custom card-text-custom-selectable" data-answer="{{ answers.answer4 }}"> 
-                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold text-shadow-1"><span class="answer-text">C: {{ answers.answer4 }}</span></h3> 
-                    </div> 
-                </div> 
-            </div> 
+            {{/each}}
 
             <form action="/lobby/{{lobbyInfo.id}}/play-game/{{gameSession.id}}/submit-answer" method="POST">
                 <input type="hidden" value="" name="answer" id="answer" />

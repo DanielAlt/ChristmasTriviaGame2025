@@ -1,0 +1,67 @@
+<div class=" me-md-3 pt-3 px-3 pt-md-5 px-md-5 text-center overflow-hidden" style="background-color:rgba(0,0,0,.8);">
+    <div class="my-3 py-3"> 
+        <h2 class="display-5 text-white">Good Game</h2> 
+        <h3 class="display-5 text-white">And our Winner Is: {{winner}}</h3> 
+    </div> 
+    <div class="bg-body-tertiary shadow-sm mx-auto" style="width: 80%; border-radius: 21px 21px 0 0;padding:20px;">
+
+
+        <div class="row row-cols-1 row-cols-lg-1 align-items-stretch g-4 py-5">
+
+            <div class="col">
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" > 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1 card-text-custom"> 
+                        <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Our Players:</span></span></h3> 
+                        <table class="table table-dark">
+                            <thead>
+                                <th>Player Name</th>
+                                {{#each rounds }}
+                                    <th>Round {{this}}</th>
+                                {{/each}}
+                                <th>Total</th>
+                            </thead>
+                            <tbody>
+                                {{#each scores}}
+                                    <tr>
+                                        {{#each this}}
+                                            <td>{{this}}</td>
+                                        {{/each}}
+                                    </tr>
+                                {{/each}}
+                            </tbody>
+                        </table>
+
+                    </div> 
+                </div>
+
+            </div>
+
+            {{#if isGameHost}}
+            <div class="col col-md-4 offset-4">
+                <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/848223a4-3cc7-46f1-912f-476775e417c7.png');"> 
+                    <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1 card-text-custom"> 
+                    <h2 class="display-5 fw-bold text-body-emphasis text-white" style="color:white !important;">Go To Next Question</h2> 
+                    <form class="form" action="/lobby/{{lobbyInfo.id}}/play-game/{{gameSession.id}}/next-question" method="POST">
+                        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center"> 
+                            <input type="submit" class="btn btn-primary btn-lg px-4 gap-3" value="Next Question" />                            
+                        </div>
+                    </form>                     
+                </div>
+            </div>
+            {{/if}}
+
+            <script src="/socket.io/socket.io.js"></script>
+            <script>
+                    const lobbyId = {{lobbyInfo.id}};
+                    const gameSessionId = {{gameSession.id}};
+                    const socket = io();
+                    socket.emit("joinLobby", lobbyId);
+                    socket.on("next-question-notification", (data) => {
+                        window.location.href = data.url;
+                    });
+            </script>
+            
+        </div>
+
+    </div>
+</div>

@@ -99,11 +99,12 @@ CREATE TABLE game_session_answer_ceremony(
 );
 
 CREATE TABLE game_session_leaderboards (
+    id                  INTEGER PRIMARY KEY AUTO_INCREMENT,
     game_session_id     INTEGER NOT NULL,
     question_id         INTEGER NOT NULL,
     client_id           INTEGER NOT NULL,
     score               INTEGER,
-    PRIMARY KEY (game_session_id, client_id),
+    FOREIGN KEY (question_id) REFERENCES questions(id),
     FOREIGN KEY (game_session_id) REFERENCES game_sessions(id),
     FOREIGN KEY (client_id) REFERENCES clients(id)
 );
@@ -118,6 +119,10 @@ INSERT INTO questions(
     game_id,
     question_text, 
     answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
     time_limit, 
     created_at, 
     points_awarded
@@ -125,6 +130,10 @@ INSERT INTO questions(
     1,
     'What artist released the top grossing holiday album of all time?',
     'Elvis Presley',
+    "Justin Beiber",
+    "Taylor Swift",
+    "Wham",
+    "Madonna",
     60000,
     NOW(),
     10
@@ -134,6 +143,10 @@ INSERT INTO questions(
     game_id,
     question_text, 
     answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
     time_limit, 
     created_at, 
     points_awarded
@@ -141,6 +154,10 @@ INSERT INTO questions(
     1,
     'In Home Alone 2, what name does Marv come up with to rebrand "The Wet Bandits"?',
     'The Sticky Bandits',
+    "The Sly Bandits",
+    "The Cat Burglars",
+    "The Kidnappers",
+    "The Desperados",
     60000,
     NOW(),
     10
@@ -150,6 +167,10 @@ INSERT INTO questions(
     game_id,
     question_text, 
     answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
     time_limit, 
     created_at, 
     points_awarded
@@ -157,6 +178,10 @@ INSERT INTO questions(
     1,
     'In Charles Dickens "A Christmas Carol," what was Mr. Scrooges first name?',
     'Ebenezer',
+    "Arnold",
+    "Aloysius",
+    "Martin",
+    "Phineas",
     60000,
     NOW(),
     10

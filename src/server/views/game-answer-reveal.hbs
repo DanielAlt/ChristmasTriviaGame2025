@@ -1,0 +1,82 @@
+<div class=" me-md-3 pt-3 px-3 pt-md-5 px-md-5 text-center overflow-hidden" style="background-color:rgba(0,0,0,.8);">
+    <div class="my-3 py-3"> 
+        <h2 class="display-5 text-white">{{question.question_text}}</h2> 
+    </div>
+
+
+    <div class="row row-cols-1 row-cols-lg-2 align-items-stretch g-4 py-5">
+        
+        <div class="col">
+            <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/3d5b2107-a5d1-467c-a370-a5dcef7c7931.png');background-size:cover;min-height:600px;"> 
+                <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1 card-text-custom"> 
+                    <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Answer: {{question.answer}}</span></span></h3> 
+                    <ul class="d-flex list-unstyled mt-auto"> 
+                        <li class="me-auto"> 
+                            <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 24 24">
+                                <path stroke="white" d="M12 1c-6.338 0-12 4.226-12 10.007 0 2.05.739 4.063 2.047 5.625l-1.993 6.368 6.946-3c1.705.439 3.334.641 4.864.641 7.174 0 12.136-4.439 12.136-9.634 0-5.812-5.701-10.007-12-10.007zm0 1c6.065 0 11 4.041 11 9.007 0 4.922-4.787 8.634-11.136 8.634-1.881 0-3.401-.299-4.946-.695l-5.258 2.271 1.505-4.808c-1.308-1.564-2.165-3.128-2.165-5.402 0-4.966 4.935-9.007 11-9.007zm-5 7.5c.828 0 1.5.672 1.5 1.5s-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5.672-1.5 1.5-1.5zm5 0c.828 0 1.5.672 1.5 1.5s-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5.672-1.5 1.5-1.5zm5 0c.828 0 1.5.672 1.5 1.5s-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5.672-1.5 1.5-1.5z"/>
+                            </svg>
+                        </li> 
+                    </ul> 
+                </div> 
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" > 
+                <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1 card-text-custom"> 
+                    <h3 class="pt-5 mt-5 mb-4 display-6 lh-1 fw-bold">Our Players:</span></span></h3> 
+                    <table class="table table-dark">
+                        <thead>
+                            <th>Player Name</th>
+                            <th>Clever Lie</th>
+                            <th>Answer Submitted</th>
+                            <th>Score This Round</th>
+                        </thead>
+                        <tbody>
+                            
+                            {{#each playerLiesAndScores}}
+                                <tr>                                    
+                                    <td>{{this.name}}</td>
+                                    <td>{{this.answer}}</td>
+                                    <td>{{this.true_answer}}</td>
+                                    <td>{{this.score}}</td>
+                                </tr>
+                            {{/each}}
+
+
+                        </tbody>
+                    </table>
+
+                </div> 
+            </div>
+
+        </div>
+
+        {{#if isGameHost}}
+        <div class="col col-md-4 offset-4">
+            <div class="card card-cover h-100 overflow-hidden text-bg-dark rounded-4 shadow-lg" style="background-image: url('/images/848223a4-3cc7-46f1-912f-476775e417c7.png');"> 
+                <div class="d-flex flex-column h-100 p-5 pb-3 text-white text-shadow-1 card-text-custom"> 
+                <h2 class="display-5 fw-bold text-body-emphasis text-white" style="color:white !important;">Go To Next Question</h2> 
+                <form class="form" action="/lobby/{{lobbyInfo.id}}/play-game/{{gameSession.id}}/next-question" method="POST">
+                    <div class="d-grid gap-2 d-sm-flex justify-content-sm-center"> 
+                        <input type="submit" class="btn btn-primary btn-lg px-4 gap-3" value="Next Question" />                            
+                    </div>
+                </form>                     
+            </div>
+        </div>
+        {{/if}}
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+                const lobbyId = {{lobbyInfo.id}};
+                const gameSessionId = {{gameSession.id}};
+                const socket = io();
+                socket.emit("joinLobby", lobbyId);
+                socket.on("next-question-notification", (data) => {
+                    window.location.href = data.url;
+                });
+        </script>
+        
+    </div>
+
+</div>

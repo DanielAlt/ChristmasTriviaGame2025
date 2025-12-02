@@ -16,15 +16,18 @@ body{
 }
 
 #team-list td{
-    text-transform: capitalize;
-    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    text-transform: uppercase;
     font-size: 14pt;
 }
 .higlighted-team{
-    color:rgba(241, 68, 64, 0.8);
+    color:rgba(241, 68, 64, 0.8) !important;
 }
 
 .answer-text{
-    text-transform: capitalize;
-    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    text-transform: uppercase;
+}
+
+table td{
+    text-transform: uppercase;
+    font-weight: bold;
 }

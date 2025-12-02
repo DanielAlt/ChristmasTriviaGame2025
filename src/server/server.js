@@ -92,7 +92,8 @@ async function lobbyProtection(req, res, next){
         LEFT JOIN rooms r ON (rc.room_id = r.id)
         LEFT JOIN game_sessions gs ON (gs.id = r.game_session_id)
         WHERE  
-            c.client_session = :clientSession
+            c.client_session = :clientSession AND 
+            gs.isComplete = 0
         LIMIT 1;             
     `, {
        clientSession: req.session.id 
@@ -111,7 +112,7 @@ async function lobbyProtection(req, res, next){
         SELECT r.id, gs.started_on
         FROM rooms r
         JOIN game_sessions gs ON (gs.id = r.game_session_id) 
-        WHERE host_client=:hostSessionID
+        WHERE host_client=:hostSessionID AND gs.isComplete = 0;
     `, {hostSessionID: req.session.id});
     if (isCurrentlyASessionHost.length){
         if (isCurrentlyASessionHost[0].started_on){
@@ -1256,6 +1257,14 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/next-question", async (req
     
     // Is this the last Question? 
     if (question_total.length == 0){
+        const [updateGameSession] = await pool.execute(`
+            UPDATE game_sessions 
+            SET isComplete = 1 
+            WHERE id=:gameSessionID 
+        `, {
+            gameSessionID: gameSessionInfo[0].id
+        });
+
         const finale_url = `/lobby/${req.params.lobby_id}/play-game/${gameSessionInfo[0].id}/finale`;
         io.to(`lobby-${req.params.lobby_id}`).emit("next-question-notification", {url: 
             finale_url
@@ -1360,6 +1369,75 @@ app.get("/lobby/:lobby_id/play-game/:game_session_id/finale", async (req, res) =
         rounds: rounds,
         winner: winner
     });
+});
+
+
+app.get("/lobby/:lobby_id/play-game/:game_session_id/status", async (req, res) => {
+        // Check to assure Lobby exists. 
+    const [myLobby] = await pool.query(
+        `SELECT * FROM rooms WHERE rooms.id = :roomID LIMIT 1;`,
+        {roomID: req.params.lobby_id}
+    );
+    if (!myLobby[0]) return res.status(404).render("not-found");
+
+    // Assure Game Session Exists, get session Info
+    const [gameSessionInfo] = await pool.query(`
+        SELECT * FROM game_sessions WHERE game_sessions.id=:gameSessionsID LIMIT 1;
+    `, {gameSessionsID: req.params.game_session_id });
+    if (!gameSessionInfo[0]) return res.status(404).render("not-found");
+
+
+    if (gameSessionInfo[0].isComplete){
+        return res.send({
+            redirect: true,
+            url: `/lobby/${req.params.lobby_id}/play-game/${gameSessionInfo[0].id}/finale`
+        })
+    }
+
+    switch (gameSessionInfo[0].ceremony_state){
+        case "answer-reveal":
+        case "answer":
+            // Determine if everyone has submitted a lie
+            const [allAnswers] = await pool.query(`
+                SELECT * 
+                FROM game_session_answers
+                WHERE 
+                    game_session_id = :gameSessionID AND
+                    question_id = :questionID
+            `, {
+                gameSessionID: gameSessionInfo[0].id,
+                questionID: gameSessionInfo[0].question_id
+            });
+
+            // Determine if everyone has submitted a true answer 
+            const [answers] = await pool.query(`
+                SELECT * 
+                FROM game_session_trueanswers
+                WHERE 
+                    game_session_id = :gameSessionID AND
+                    question_id = :questionID
+            `, {
+                gameSessionID: gameSessionInfo[0].id,
+                questionID: gameSessionInfo[0].question_id
+            });
+
+            if (allAnswers.length == 3 && answers.length == 3){
+                return res.send({
+                    redirect: true,
+                    url: `/lobby/${req.params.lobby_id}/play-game/${gameSessionInfo[0].id}/answer-reveal-ceremony`
+                });
+            } else if (allAnswers.length == 3 && answers.length == 0){
+                return res.send({
+                    redirect: true,
+                    url: `/lobby/${req.params.lobby_id}/play-game/${gameSessionInfo[0].id}/answer-ceremony`
+                });
+            } else {
+                return res.send({ redirect: false });
+            }            
+        default: 
+            return res.send({redirect: false});
+    }
+
 });
 
 // start-game -> join-lobby -> play-game -> waiting room -> answer ceremony

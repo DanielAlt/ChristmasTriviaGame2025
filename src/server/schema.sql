@@ -38,6 +38,7 @@ CREATE TABLE game_sessions (
     started_on      DATETIME,
     question_id     INTEGER NOT NULL,
     ceremony_state  VARCHAR(255) NOT NULL DEFAULT 'play',
+    isComplete INTEGER DEFAULT 0,
     FOREIGN KEY (question_id) REFERENCES questions(id)
 );
 

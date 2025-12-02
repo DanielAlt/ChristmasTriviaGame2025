@@ -19,6 +19,24 @@
     socket.on("answer-reveal-ceremony", (data) => {
         window.location.href = data.url;
     });
+    setTimeout(
+        function(){
+            $.ajax({
+            method: "GET",
+            url: `/lobby/${lobbyId}/play-game/${gameSessionId}/status`,
+            success: function(data){
+                console.log(data);
+                if (data.redirect){
+                    window.location.href = data.url;
+                } 
+            },
+            error: function(err){
+                console.log(err);
+            }
+        });
+        }
+    , 1000)
+
 </script>
 {{else}}
 <script>
@@ -30,5 +48,22 @@
         window.location.href = data.url;
 
     });
+    setTimeout(
+        function(){
+            $.ajax({
+            method: "GET",
+            url: `/lobby/${lobbyId}/play-game/${gameSessionId}/status`,
+            success: function(data){
+                console.log(data);
+                if (data.redirect){
+                    window.location.href = data.url;
+                } 
+            },
+            error: function(err){
+                console.log(err);
+            }
+        });
+        }
+    , 1000)
 </script>
 {{/if}}

@@ -261,6 +261,10 @@ app.post("/lobby/join", lobbyProtection, async(req, res) => {
             name: name,
             client_session: req.session.id
         });
+    } else {
+        [updateClient] = await pool.execute(`
+            UPDATE clients SET name=:name WHERE client_session = :clientSession;   
+        `, {name: name, clientSession: req.session.id});
     }
 
     /** 
@@ -703,6 +707,34 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony", async (r
         questionID: gameSessionInfo[0].question_id
     });
 
+    if (existingAnswers.length < 3){
+        // Determine which client didn't answer; and answer for them
+        const notMissingIDs = existingAnswers.map(i => i.client_id); 
+        
+        let missingClients = [];
+        if (notMissingIDs.length === 0){
+            [missingClients] = await pool.query(`
+                SELECT client_id 
+                FROM rooms_clients WHERE 
+                    room_id = :roomID ;
+            `, {
+                roomID: req.params.lobby_id
+            });
+        } else {
+            [missingClients] = await pool.query(`
+                SELECT client_id 
+                FROM rooms_clients WHERE 
+                    room_id = :roomID AND 
+                    client_id NOT IN (${notMissingIDs.join(", ")});
+            `, {
+                roomID: req.params.lobby_id
+            });
+        }
+        for (let i = 0 ; i < missingClients.length; i++){
+            existingAnswers.push(missingClients[i]);
+        }
+    }
+
     shuffledAnswers = shuffle(existingAnswers);
 
     // Create the game_session_answer_ceremony
@@ -720,7 +752,11 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony", async (r
     for (let i = 0; i < shuffledAnswers.length; i++){
         // If the submitted answer is the real answer choose a default lie 
         // If it happens more than once, choose a different default lie
-        if (shuffledAnswers[i].answer.trim().toLowerCase() == question[0].answer.trim().toLowerCase()){
+        // If the answer is blank choose a different default lie 
+        if (
+            !shuffledAnswers[i].hasOwnProperty("answer") ||
+            shuffledAnswers[i].answer.trim().toLowerCase() == question[0].answer.trim().toLowerCase() 
+        ){
             let defaultOptions = ['option_text1', 'option_text2', 'option_text3', 'option_text4'];
             let defaultOption; 
             for (let j = 0; j < defaultOptions.length; j++){
@@ -732,6 +768,28 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/answer-ceremony", async (r
             }
             answer_dict["answer" + (i+1)] = question[0][defaultOption]
             answer_dict["answer" + (i+1) + "Client"] = shuffledAnswers[i].client_id;
+
+            if (!shuffledAnswers[i].hasOwnProperty("answer")){
+                const [insertAnswer] = await pool.execute(`
+                    INSERT INTO game_session_answers (
+                        game_session_id,
+                        client_id, 
+                        question_id,
+                        answer
+                    ) VALUES (
+                        :gameSessionID, 
+                        :clientID,
+                        :questionID,
+                        :answer
+                    );
+                `, {
+                    gameSessionID: gameSessionInfo[0].id,
+                    clientID: shuffledAnswers[i].client_id,
+                    questionID: gameSessionInfo[0].question_id,
+                    answer: ""
+                });
+            }
+
         } else {
             answer_dict["answer" + (i+1)] = shuffledAnswers[i].answer.trim().toLowerCase();
             answer_dict["answer" + (i+1) + "Client"] = shuffledAnswers[i].client_id;
@@ -1067,6 +1125,62 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/answer-reveal-ceremony", a
         questionID: gameSessionInfo[0].question_id
     });
 
+    // If anyone failed to answer; insert them a blank answer
+    if (playersAnswers.length < 3){
+        console.log("Player Answers", playersAnswers)
+        let answersClients = [];
+        answeredIDS = playersAnswers.map(i => i.client_id);
+        if (answeredIDS.length === 0){
+            [answersClients] = await pool.query(`
+                SELECT client_id 
+                FROM rooms_clients WHERE 
+                    room_id = :roomID;
+            `, {
+                roomID: req.params.lobby_id
+            });
+            console.log("Answers Clients", answersClients);
+        } else {
+            [answersClients] = await pool.query(`
+                SELECT client_id 
+                FROM rooms_clients WHERE 
+                    room_id = :roomID AND 
+                    client_id NOT IN (${answeredIDS.join(", ")});  
+            `, {
+                roomID: req.params.lobby_id
+            });
+        }
+
+        console.log("Answers Clients", answersClients);
+        for (let i = 0; i < answersClients.length; i++){
+            playersAnswers.push({
+                "client_id": answersClients[i]['client_id'],
+                "answer": ""
+            });
+
+            const [answerStore] = await pool.execute(`
+                INSERT INTO  game_session_trueanswers (
+                    game_session_id,
+                    client_id,
+                    question_id,
+                    answer
+                ) VALUES (
+                    :gameSessionID,
+                    :clientID,
+                    :questionID,
+                    :answer 
+                );
+            `, {
+                gameSessionID: gameSessionInfo[0].id,
+                clientID: answersClients[i]['client_id'],
+                questionID: gameSessionInfo[0].question_id,
+                answer: ""
+            });
+            console.log(answerStore);
+
+        }
+    }
+
+
     // Determine Player Scores
     scores = {}    
     for (let j = 0 ; j < playersAnswers.length; j++){
@@ -1095,6 +1209,8 @@ app.post("/lobby/:lobby_id/play-game/:game_session_id/answer-reveal-ceremony", a
         }
     }
 
+    console.log(scores);
+    
     // Save Scores to Leaderboards
     const scoreKeys = Object.keys(scores);
     for (let x = 0; x < scoreKeys.length; x++){
@@ -1198,6 +1314,9 @@ app.get("/lobby/:lobby_id/play-game/:game_session_id/answer-reveal-ceremony", as
             }
         }        
     }
+
+
+    console.log(playerLiesAndScores);
 
     const [question] = await pool.query(`
         SELECT * FROM questions WHERE id=:questionID; 

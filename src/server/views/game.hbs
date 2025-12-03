@@ -106,6 +106,24 @@
                 </div> 
             </div>
         </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+
+            const lobbyId = {{lobbyInfo.id}};
+            const gameSessionId = {{gameSession.id}};
+            const socket = io();
+
+            // Join the lobby room
+            socket.emit("joinLobby", lobbyId);
+
+            socket.on("answer-ceremony", (data) => {
+                window.location.href = data.url;
+            });       
+
+
+        </script>
+
     {{/if}}
 </div>
 

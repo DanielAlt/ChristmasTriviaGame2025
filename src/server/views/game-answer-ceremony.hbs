@@ -107,6 +107,7 @@
             </form>
 
         </div>
+        <script src="/socket.io/socket.io.js"></script>
 
         <script>
             $(document).ready(function(){
@@ -119,6 +120,20 @@
                     $("#submit-btn").prop("disabled", false);
                 })
             });
+
+            const lobbyId = {{lobbyInfo.id}};
+            const gameSessionId = {{gameSession.id}};
+            const socket = io();
+            const isRoomOwner = {{isGameHost}} ;
+            const numberOfPlayers = {{allPlayers.length}};
+
+            // Join the lobby room
+            socket.emit("joinLobby", lobbyId);
+
+            socket.on("answer-reveal-ceremony", (data) => {
+                window.location.href = data.url;
+            })
+
         </script>
 
     {{/if}}

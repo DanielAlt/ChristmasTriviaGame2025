@@ -187,3 +187,171 @@ INSERT INTO questions(
     NOW(),
     10
 );
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    "What was the name of The Grinch's dog in The Grinch who Stole Christmas",
+    'Max',
+    "Fido",
+    "Spot",
+    "Radar",
+    "Dog",
+    60000,
+    NOW(),
+    10
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    "In Friends, which character dresses up as the 'Holiday Armadillo' to teach his son about Hanukkah?",
+    "Ross",
+    "Monika",
+    "Rachael",
+    "Chandler",
+    "Joey",
+    60000,
+    NOW(),
+    10
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    "In the Santa Schmanta episode of American Dad, who sings the opening musical number with Roger the Alien?",
+    "Snot",
+    "Steve",
+    "Stan",
+    "Francine",
+    "Klaus",
+    60000,
+    NOW(),
+    10
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    "What is the name of the building where the classic holiday movie 'Die Hard' takes place?",
+    "Nakatomi Plaza",
+    "The Empire State Building",
+    "The World Trade Center",
+    "The Eaton Center",
+    "The Louvre",
+    60000,
+    NOW(),
+    10
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    "What is the name of the evil magician in Frosty the Snowman?",
+    "Professor Hinkle",
+    "Mr. Fantastic",
+    "Mr. Kudgle",
+    "Professor mcCarthy",
+    "Randall Hincher",
+    60000,
+    NOW(),
+    10
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    " In Home Alone, where does Kevin's family go for Christmas?",
+    "Paris",
+    "London",
+    "Tokyo",
+    "Montreal",
+    "Amsterdam",
+    60000,
+    NOW(),
+    10
+);
+
+INSERT INTO questions(
+    game_id,
+    question_text, 
+    answer, 
+    option_text1,
+    option_text2,
+    option_text3,
+    option_text4,
+    time_limit, 
+    created_at, 
+    points_awarded
+) VALUES (
+    1,
+    "What's the highest-grossing Christmas movie of all time?",
+    "Home Alone",
+    "The Nightmare Before Christmas",
+    "Elf",
+    "Jingle All The Way",
+    "The Santa Claus 2",
+    60000,
+    NOW(),
+    10
+);

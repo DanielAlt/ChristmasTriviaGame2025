@@ -217,12 +217,10 @@ app.post("/lobby/join", lobbyProtection, async(req, res) => {
     let password  = req.body.password;
 
     if (name.length > 255){
-        req.session.errors  = {name: "'name' cannot exceed 255 characters"};
-        return res.status(422).send({name: "'name' cannot exceed 255 characters"});
+        return res.status(422).send({message: "'name' cannot exceed 255 characters"});
     }
     if (password.length !== 6){
-        req.session.errors =  {password: "'password' must be 6 characters"};
-        return res.status(422).send({password: "'password' must be 6 characters"});
+        return res.status(422).send({message: "'password' must be 6 characters"});
     }
 
     password = password.toUpperCase();
@@ -234,7 +232,7 @@ app.post("/lobby/join", lobbyProtection, async(req, res) => {
         `SELECT * FROM rooms where trim(rooms.password) = :password LIMIT 1;`,
         {password: password}
     ); 
-    if (!myLobby[0]) return res.status(422).send({password: "incorrect password"});
+    if (!myLobby[0]) return res.status(422).send({message: "incorrect password"});
     
     /** 
      * Check if the client exists already 
@@ -293,7 +291,10 @@ app.post("/lobby/join", lobbyProtection, async(req, res) => {
     // Notify all clients in the lobby
     io.to(`lobby-${myLobby[0].id}`).emit("player-join", { name });
 
-    res.redirect(`/lobby/${myLobby[0].id}`);
+    res.send({
+        url: `/lobby/${myLobby[0].id}`,
+        redirect: true
+    });
 });
 
 app.get("/lobby/:id", async (req, res) => {

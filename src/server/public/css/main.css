@@ -1,8 +1,12 @@
 body{
     background-image: url('/images/1215b2c3-202b-4e9a-8a64-83f271fdf9ac.png');
-    background-size:cover;
-    background-repeat:no-repeat;
-    background-position: center center;
+    background-size: cover;
+    background-position: center center; /* Centers the image */
+    background-attachment: fixed;
+    background-repeat: no-repeat; /* Prevents image from repeating */
+    height: 100vh; /* Ensures the body takes full viewport height */
+    margin: 0; /* Removes default body margin */
+    }
 }            
 
 .card-text-custom{

@@ -1,8 +1,8 @@
 <div class="px-4 py-5 my-5 text-center"> 
-    <img class="d-block mx-auto mb-4" src="/images/cropped-Black-double-circle.transparent.png" alt="" width="200" height="200"> 
     <h1 class="display-5 fw-bold text-body-emphasis text-white">Join Lobby</h1> 
+    <img class="d-block mx-auto mb-4" src="/images/cbe8770e-b3fe-4ba2-a4c0-58420eef58d0.png" alt="" width="200"> 
     <div class="col-lg-4 mx-auto"> 
-        <form action="/lobby/join" method="POST">
+        <form action="/lobby/join" method="POST" class="form" id="join-lobby-form">
             <div class="mb-4">
                 <input type="text" class="form-control" id="password" placeholder="Room ID" name="password" />
             </div>
@@ -13,3 +13,25 @@
         </form>  
     </div> 
 </div>
+
+<script>
+$(document).ready(function(){
+    $("#join-lobby-form").on('submit', function(e){
+        e.preventDefault();
+        $.ajax({
+            url: $(this).attr("action"),
+            method: "POST",
+            data: $(this).serialize(),
+            success: function(data){
+                if (data.hasOwnProperty("redirect")){
+                    window.location.href =  data.url;
+                }
+            },
+            error: function(error){
+                alert(error.responseJSON.message);
+            }
+        });
+    });
+
+});    
+</script>

@@ -79,7 +79,6 @@ Vagrant.configure("2") do |config|
     sudo apt install -y mysql-server
     mysql -uroot -ptoor -e"CREATE DATABASE framework_fun;"
     mysql -uroot -ptoor framework_fun < /vagrant/src/server/schema.sql
-    mysql -uroot -ptoor framework_fun < /vagrant/src/server/seed-data.sql
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt install nodejs npm
     cd /vagrant/src/server 
